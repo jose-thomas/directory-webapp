@@ -3,9 +3,8 @@ import { PhoneOutlined, MailOutlined } from "@ant-design/icons";
 import React, { useState, useEffect } from "react";
 import Unit from "@/enums/Unit";
 
-function DirectoryTable(props) {
+function DirectoryTable({familyData}) {
 
-  console.log("DirectoryTable props:", props);
   const columns = [
     {
       title: "Name",
@@ -80,7 +79,7 @@ function DirectoryTable(props) {
         }
       }
       columns={columns}
-      dataSource={props.familyData}
+      dataSource={familyData}
       pagination={{ pageSize: 10 }}
       scroll={{ x: "max-content", y: "45vh" }}
       showHeader={false}
