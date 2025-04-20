@@ -5,37 +5,47 @@ import { SearchOutlined, FilterOutlined, FileImageFilled, PlusOutlined } from "@
 import useHorizontalScroll from "@/hooks/useHorizontalScroll";
 import DirectoryTable from "./DirectoryTable";
 import { searchFamilies } from "@/lib/services/familyService";
-import units from "@/constants/units";
+import Unit from "@/enums/Unit";
 
-// Component for the header with search, filter, and action buttons
-const HeaderActions = () => (
-  <Flex gap="small" justify="center" align="center" style={{ width: "82vw", height: "10vh" }}>
-    <Input.Search
-      style={{ width: "34vw" }}
-      placeholder="Search"
-      enterButton={<Button icon={<SearchOutlined />} type="primary" />}
-    />
-    <Button icon={<FilterOutlined />} style={{ width: "4.7vw", borderRadius: "1.5vw" }} />
-    <Button type="primary" icon={<PlusOutlined />} style={{ width: "10vw", borderRadius: "1.5vw" }}>
-      New Family
-    </Button>
-    <Tooltip title="*Temp., will be removed post launch" color="red" placement="topRight">
-      <Button
-        color="gold"
-        variant="outlined"
-        style={{ width: "10vw", borderRadius: "1.5vw" }}
-        icon={<FileImageFilled />}
-      >
-        Bulk Upload
-        <span style={{ color: "red" }}>*</span>
+// HeaderActions Component
+const HeaderActions = ({ onSearch }) => {
+  return (
+    <Flex gap="small" justify="center" align="center" style={{ width: "82vw", height: "10vh" }}>
+      <Input.Search
+        style={{ width: "34vw" }}
+        placeholder="Search"
+        enterButton={<Button icon={<SearchOutlined />} type="primary" />}
+        onSearch={onSearch}
+      />
+      <Button icon={<FilterOutlined />} style={{ width: "4.7vw", borderRadius: "1.5vw" }} />
+      <Button type="primary" icon={<PlusOutlined />} style={{ width: "10vw", borderRadius: "1.5vw" }}>
+        New Family
       </Button>
-    </Tooltip>
-  </Flex>
-);
+      <Tooltip title="*Temp., will be removed post launch" color="red" placement="topRight">
+        <Button
+          color="gold"
+          variant="outlined"
+          style={{ width: "10vw", borderRadius: "1.5vw" }}
+          icon={<FileImageFilled />}
+        >
+          Bulk Upload
+          <span style={{ color: "red" }}>*</span>
+        </Button>
+      </Tooltip>
+    </Flex>
+  );
+};
 
-// Component for the horizontal scrollable unit buttons
-const UnitButtons = ({ units }) => {
+// UnitButtons Component
+const UnitButtons = ({ onUnitSelect }) => {
   const scrollRef = useHorizontalScroll();
+  const extendedUnit = { All: "All", ...Unit };
+  const [selectedUnit, setSelectedUnit] = useState("All");
+
+  const handleUnitClick = (key) => {
+    setSelectedUnit(key);
+    onUnitSelect(key);
+  };
 
   return (
     <Flex
@@ -51,29 +61,41 @@ const UnitButtons = ({ units }) => {
       }}
       className="scroll-container"
     >
-      {["All", ...units].map((unit, i) => (
+      {Object.entries(extendedUnit).map(([key, value]) => (
         <Button
-          key={String(i + 1)}
+          key={key === "All" ? "ALL" : key}
           style={{
             width: "8vw",
             borderRadius: "1.5vw",
-            color: unit === "All" ? "#fff" : "#467CC8",
+            color: selectedUnit === key ? "#fff" : "#467CC8",
             fontSize: 16,
           }}
-          type={unit === "All" ? "primary" : "default"}
+          type={selectedUnit === key ? "primary" : "default"}
+          onClick={() => handleUnitClick(key)}
         >
-          {unit}
+          {value}
         </Button>
       ))}
     </Flex>
   );
 };
 
-// Main DirectoryPage component
+// Main DirectoryPage Component
 export default function DirectoryPage() {
   const contentStyle = { height: "80vh", width: "82vw", overflow: "hidden" };
   const [loading, setLoading] = useState(false);
   const [familyData, setFamilyData] = useState([]);
+  const [filterUnit, setFilterUnit] = useState("All");
+  const [searchText, setSearchText] = useState("");
+
+  const handleUnitSelect = (unit) => {
+    setFilterUnit(unit);
+    console.log("Selected Unit for Filter:", unit);
+  };
+
+  const handleSearch = (value) => {
+    setSearchText(value);
+  };
 
   useEffect(() => {
     const fetchFamilies = async () => {
@@ -85,7 +107,28 @@ export default function DirectoryPage() {
           node: {
             type: "filterCriteria",
             evaluationType: "AND",
-            filters: [],
+            filters: [
+              ...(filterUnit !== "All"
+                ? [
+                    {
+                      type: "fieldFilter",
+                      fieldName: "unit",
+                      operation: "EQUALS",
+                      values: [filterUnit],
+                    },
+                  ]
+                : []),
+              ...(searchText
+                ? [
+                    {
+                      type: "fieldFilter",
+                      fieldName: "name",
+                      operation: "STARTS_WITH",
+                      values: [searchText],
+                    },
+                  ]
+                : []),
+            ],
           },
         };
         const response = await searchFamilies(payload);
@@ -98,12 +141,12 @@ export default function DirectoryPage() {
     };
 
     fetchFamilies();
-  }, []);
+  }, [filterUnit, searchText]);
 
   return (
     <Flex vertical justify="flex-start" align="center" style={contentStyle} gap="small">
-      <HeaderActions />
-      <UnitButtons units={units} />
+      <HeaderActions onSearch={handleSearch} />
+      <UnitButtons onUnitSelect={handleUnitSelect} />
       {loading ? (
         <Spin size="large" style={{ marginTop: "20px" }} />
       ) : (
