@@ -1,9 +1,11 @@
 import { Flex, Table } from "antd";
 import { PhoneOutlined, MailOutlined } from "@ant-design/icons";
-import React from "react";
-import directorySample from "@/sampleData/directorySample";
+import React, { useState, useEffect } from "react";
+import Unit from "@/enums/Unit";
 
-function DirectoryTable() {
+function DirectoryTable(props) {
+
+  console.log("DirectoryTable props:", props);
   const columns = [
     {
       title: "Name",
@@ -23,7 +25,7 @@ function DirectoryTable() {
               fontSize: "0.9vw",
             }}
           >
-            {record.unit}
+            {Unit[record.unit]}
           </span>
         </Flex>
       ),
@@ -31,8 +33,8 @@ function DirectoryTable() {
     },
     {
       title: "Contact",
-      dataIndex: "contact",
-      key: "contact",
+      dataIndex: "phoneNumber",
+      key: "phoneNumber",
       render: (text) => (
         <Flex gap="small">
           <PhoneOutlined style={{ fontSize: "1vw", color: "#989898" }} />
@@ -51,8 +53,8 @@ function DirectoryTable() {
     },
     {
       title: "Email",
-      dataIndex: "email",
-      key: "email",
+      dataIndex: "emailId",
+      key: "emailId",
       render: (text) => (
         <Flex gap="small">
           <MailOutlined style={{ fontSize: "1vw", color: "#989898" }} />
@@ -78,7 +80,7 @@ function DirectoryTable() {
         }
       }
       columns={columns}
-      dataSource={directorySample}
+      dataSource={props.familyData}
       pagination={{ pageSize: 10 }}
       scroll={{ x: "max-content", y: "45vh" }}
       showHeader={false}
