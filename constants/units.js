@@ -1,13 +1,13 @@
 const units = [
-    "Infant Jesus",
-    "St. Joseph",
-    "St. Thomas",
-    "St. Mary",
-    "St. George",
-    "Little Flower",
     "Holy Family",
+    "Infant Jesus",
+    "Little Flower",
     "St. Antony",
+    "St. George",
+    "St. Joseph",
+    "St. Mary",
     "St. Sebastian",
+    "St. Thomas",
 ];
 
 export default units;

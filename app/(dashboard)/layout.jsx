@@ -65,7 +65,7 @@ export default function DashboardLayout({ children }) {
             <p
               style={{
                 color: "background: #474747",
-                fontSize: "20px",
+                fontSize: "24px",
                 fontWeight: "700",
                 lineHeight: "1.3",
               }}

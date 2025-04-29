@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
 import { Button, Flex, Input, Tooltip, Spin } from "antd";
 import { SearchOutlined, FilterOutlined, FileImageFilled, PlusOutlined } from "@ant-design/icons";
@@ -8,7 +9,9 @@ import { searchFamilies } from "@/lib/services/familyService";
 import Unit from "@/enums/Unit";
 
 // HeaderActions Component
+
 const HeaderActions = ({ onSearch }) => {
+  const router = useRouter();
   return (
     <Flex gap="small" justify="center" align="center" style={{ width: "82vw", height: "10vh" }}>
       <Input.Search
@@ -18,7 +21,7 @@ const HeaderActions = ({ onSearch }) => {
         onSearch={onSearch}
       />
       <Button icon={<FilterOutlined />} style={{ width: "4.7vw", borderRadius: "1.5vw" }} />
-      <Button type="primary" icon={<PlusOutlined />} style={{ width: "10vw", borderRadius: "1.5vw" }}>
+      <Button type="primary" icon={<PlusOutlined />} style={{ width: "10vw", borderRadius: "1.5vw" }} onClick={() => router.push("/directory/new-family")}>
         New Family
       </Button>
       <Tooltip title="*Temp., will be removed post launch" color="red" placement="topRight">
