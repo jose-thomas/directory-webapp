@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Form, Input, DatePicker, Checkbox, Radio, Select, Row, Col, Divider } from "antd";
+import BloodGroup from "@/enums/BloodGroup";
 const { Option } = Select;
 
 // Add member component 
@@ -36,6 +37,14 @@ export default function FamilyMemberForm({ namePrefix = "", isFamilyHead, onSele
                 </Col>
 
                 <Col span={12}>
+                    <Form.Item label="Phone Number" name={`${namePrefix}phoneNumber`}>
+                        <Input placeholder="Enter Phone Number" />
+                    </Form.Item>
+                </Col>
+            </Row>
+
+            <Row gutter={50}>
+                <Col span={12}>
                     <Form.Item label="Date of Birth" name={`${namePrefix}birthDate`} rules={[{ required: true, message: "Please enter the Date of Birth!" }]}>
                         <DatePicker style={{ width: "100%" }} placeholder="dd/mm/yyyy" format="DD/MM/YYYY" />
                     </Form.Item>
@@ -64,14 +73,11 @@ export default function FamilyMemberForm({ namePrefix = "", isFamilyHead, onSele
                 <Col span={12}>
                     <Form.Item label="Blood Group" style={{ textAlign: "left" }} name={`${namePrefix}bloodGroup`}>
                         <Select placeholder="Select Blood Group">
-                            <Option value="A+">A+</Option>
-                            <Option value="B+">B+</Option>
-                            <Option value="AB+">AB+</Option>
-                            <Option value="O+">O+</Option>
-                            <Option value="A-">A-</Option>
-                            <Option value="B-">B-</Option>
-                            <Option value="AB-">AB-</Option>
-                            <Option value="O-">O-</Option>
+                            {Object.entries(BloodGroup).map(([key, value]) => (
+                                <Option key={key} value={value}>
+                                    {value}
+                                </Option>
+                            ))}
                         </Select>
                     </Form.Item>
                 </Col>
