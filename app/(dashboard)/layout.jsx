@@ -1,5 +1,5 @@
 "use client";
-import { Layout as AntLayout, Button, Typography, Flex } from "antd";
+import { Layout as AntLayout, Button, Typography, Flex, App } from "antd";
 import { LogoutOutlined } from "@ant-design/icons";
 const { Header, Content, Sider } = AntLayout;
 const { Title } = Typography;
@@ -42,61 +42,63 @@ export default function DashboardLayout({ children }) {
   };
 
   return (
-    <AntLayout style={layoutStyle}>
-      <Sider width="18vw" style={siderStyle}>
-        <SideMenu />
-        <Button
-          type="text"
-          icon={<LogoutOutlined />}
-          style={{
-            position: "absolute",
-            color: "#f5f5f5",
-            bottom: "1rem",
-            left: "0.7vw",
-            fontSize: 16,
-          }}
-        >
-          Log Out
-        </Button>
-      </Sider>
-      <AntLayout>
-        <Header style={headerStyle}>
-          <Flex vertical justify="" align="flex-start">
-            <p
-              style={{
-                color: "background: #474747",
-                fontSize: "24px",
-                fontWeight: "700",
-                lineHeight: "1.3",
-              }}
-            >
-              St. Jude Parish
-            </p>
-            <p
-              style={{
-                color: "#8A8A8A",
-                fontSize: "18px",
-                fontWeight: "400",
-                lineHeight: "1.6",
-              }}
-            >
-              Sahibabad
-            </p>
-          </Flex>
+    <App>
+      <AntLayout style={layoutStyle}>
+        <Sider width="18vw" style={siderStyle}>
+          <SideMenu />
+          <Button
+            type="text"
+            icon={<LogoutOutlined />}
+            style={{
+              position: "absolute",
+              color: "#f5f5f5",
+              bottom: "1rem",
+              left: "0.7vw",
+              fontSize: 16,
+            }}
+          >
+            Log Out
+          </Button>
+        </Sider>
+        <AntLayout>
+          <Header style={headerStyle}>
+            <Flex vertical justify="" align="flex-start">
+              <p
+                style={{
+                  color: "background: #474747",
+                  fontSize: "24px",
+                  fontWeight: "700",
+                  lineHeight: "1.3",
+                }}
+              >
+                St. Jude Parish
+              </p>
+              <p
+                style={{
+                  color: "#8A8A8A",
+                  fontSize: "18px",
+                  fontWeight: "400",
+                  lineHeight: "1.6",
+                }}
+              >
+                Sahibabad
+              </p>
+            </Flex>
 
-          <Image
-            src="/ParishLogo.png"
-            alt="St. Jude's Church, Sahibabad logo"
-            width={100}
-            height={100}
-            style={{ objectFit: "cover" }}
-            priority
-          />
-        </Header>
-        <Content style={contentStyle} className="scroll-container">
-          {children}
-        </Content>
+            <Image
+              src="/ParishLogo.png"
+              alt="St. Jude's Church, Sahibabad logo"
+              width={100}
+              height={100}
+              style={{ objectFit: "cover" }}
+              priority
+            />
+          </Header>
+          <Content style={contentStyle} className="scroll-container">
+            {children}
+          </Content>
+        </AntLayout>
       </AntLayout>
-    </AntLayout>
+    </App>
   );
 }

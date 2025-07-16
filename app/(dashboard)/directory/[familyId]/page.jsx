@@ -11,6 +11,8 @@ import {
   Typography,
   message,
   Spin,
+  Modal,
+  App,
 } from "antd";
 import { useParams, useRouter } from "next/navigation";
 import Unit from "@/enums/Unit";
@@ -22,7 +24,8 @@ import {
   updateFamily, 
   addFamilyMembers, 
   uploadFamilyPhoto, 
-  deleteFamilyPhoto 
+  deleteFamilyPhoto,
+  deleteFamily
 } from "@/lib/services/familyService";
 import dayjs from "dayjs";
 
@@ -33,6 +36,7 @@ export default function FamilyDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const familyId = params.familyId;
+  const { modal, message } = App.useApp(); // Destructure message as well
   
   const [form] = Form.useForm();
   const [familyHeadIndex, setFamilyHeadIndex] = useState(0);
@@ -137,6 +141,29 @@ export default function FamilyDetailsPage() {
       loadFamilyData();
     }
   }, [familyId, form]);
+
+  const handleDeleteFamily = () => {
+    modal.confirm({ // Use modal.confirm from App.useApp()
+      title: 'Are you sure you want to delete this family?',
+      content: 'This action cannot be undone.',
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'No, Cancel',
+      onOk: async () => {
+        try {
+          setLoading(true);
+          await deleteFamily(familyId);
+          message.success("Family deleted successfully!"); // Use message from App.useApp()
+          router.push("/directory"); // Redirect to directory page after deletion
+        } catch (error) {
+          console.error("Failed to delete family:", error);
+          message.error("Failed to delete family. Please try again.");
+        } finally {
+          setLoading(false);
+        }
+      },
+    });
+  };
 
   const addNewMember = () => {
     setMemberForms((prev) => [...prev, Date.now()]);
@@ -288,144 +315,155 @@ export default function FamilyDetailsPage() {
   }
 
   return (
-    <div 
-      className="family-form-container" 
-      style={{ 
-        maxHeight: "calc(100vh - 120px)",
-        overflowY: "auto",
-        padding: "24px",
-        position: "relative",
-        background: "#fff"
-      }}
-    >
-      <Spin spinning={loading} tip="Updating...">
-        <Form layout="vertical" form={form} className="family-form">
-          {/* Header with Back button and Save button */}
-          <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
-            <Col>
-              <Button onClick={() => router.back()}>
-                ← Back to Directory
-              </Button>
-            </Col>
-            <Col>
-              <Button
-                type="primary"
-                size="large"
-                onClick={handleSaveFamily}
-                loading={loading}
-                style={{ minWidth: "150px" }}
-              >
-                Update Family
-              </Button>
-            </Col>
-          </Row>
-
-          <Row gutter={[24, 24]}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Upload Family Photo"
-                name="upload"
-                valuePropName="fileList"
-                getValueFromEvent={(e) => {
-                  if (Array.isArray(e)) {
-                    return e;
-                  }
-                  return e?.fileList;
-                }}
-              >
-                <FamilyPhotoUpload 
-                  value={photoFileList}
-                  onChange={(newFileList) => {
-                    console.log("Photo onChange called with:", newFileList);
-                    setPhotoFileList(newFileList);
-                    form.setFieldValue('upload', newFileList);
-                  }}
-                />
-              </Form.Item>
-            </Col>
-            
-            <Col xs={24} md={12}>
-              <Form.Item 
-                label="Prayer Unit" 
-                name="prayerUnit" 
-                rules={[{ required: true, message: "Please select a prayer unit!" }]}
-              >
-                <Select placeholder="Select Prayer Unit">
-                  {Object.entries(Unit).map(([key, value]) => (
-                    <Option key={key} value={value}>
-                      {value}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-
-              <Form.Item 
-                label="Address" 
-                name="address" 
-                rules={[{ required: true, message: "Please enter the address!" }]}
-              >
-                <Input.TextArea placeholder="Enter Address" rows={3} />
-              </Form.Item>
-
-              <Form.Item 
-                label="House Name" 
-                name="houseName"
-              >
-                <Input placeholder="Enter House Name" />
-              </Form.Item>
-            </Col>
-          </Row>
-
-          <div style={{ margin: "20px 0" }}>
-            <Title level={4}>Family Members</Title>
-          </div>
-
-          {memberForms.map((key, index) => (
-            <div key={key} style={{ marginBottom: "24px", border: "1px solid #f0f0f0", padding: "16px", borderRadius: "8px" }}>
-              <Row justify="space-between" align="middle" style={{ marginBottom: "16px" }}>
-                <Col>
-                  <Title level={5}>
-                    Member {index + 1}
-                    {index < familyData.familyMembers.length && (
-                      <span style={{ color: '#666', fontSize: '14px', fontWeight: 'normal' }}>
-                        {' '}(Existing)
-                      </span>
-                    )}
-                    {index >= familyData.familyMembers.length && (
-                      <span style={{ color: '#52c41a', fontSize: '14px', fontWeight: 'normal' }}>
-                        {' '}(New)
-                      </span>
-                    )}
-                  </Title>
-                </Col>
-                {index > 0 && (
-                  <Col>
-                    <Button
-                      danger
-                      onClick={() => removeMember(index)}
-                    >
-                      Remove
-                    </Button>
-                  </Col>
-                )}
-              </Row>
-              <FamilyMemberForm
-                namePrefix={`member_${index}_`}
-                isFamilyHead={familyHeadIndex === index}
-                onSelectFamilyHead={() => setFamilyHeadIndex(index)}
-              />
-              {/* Show Add button only after the last member form */}
-              {index === memberForms.length - 1 && (
-                <Button type="dashed" onClick={addNewMember} block style={{ marginTop: "16px" }}>
-                  + Add Family Member
+    <App>
+      <div 
+        className="family-form-container" 
+        style={{ 
+          maxHeight: "calc(100vh - 120px)",
+          overflowY: "auto",
+          padding: "24px",
+          position: "relative",
+          background: "#fff"
+        }}
+      >
+        <Spin spinning={loading} tip="Updating...">
+          <Form layout="vertical" form={form} className="family-form">
+            {/* Header with Back button and Save button */}
+            <Row justify="space-between" align="middle" style={{ marginBottom: 24 }}>
+              <Col>
+                <Button onClick={() => router.back()}>
+                  ← Back to Directory
                 </Button>
-              )}
+              </Col>
+              <Col>
+                <Button
+                  type="primary"
+                  size="large"
+                  onClick={handleSaveFamily}
+                  loading={loading}
+                  style={{ minWidth: "150px", marginRight: "10px" }}
+                >
+                  Update Family
+                </Button>
+                <Button
+                  danger
+                  size="large"
+                  onClick={handleDeleteFamily}
+                  loading={loading}
+                  style={{ minWidth: "150px" }}
+                >
+                  Delete Family
+                </Button>
+              </Col>
+            </Row>
+
+            <Row gutter={[24, 24]}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Upload Family Photo"
+                  name="upload"
+                  valuePropName="fileList"
+                  getValueFromEvent={(e) => {
+                    if (Array.isArray(e)) {
+                      return e;
+                    }
+                    return e?.fileList;
+                  }}
+                >
+                  <FamilyPhotoUpload 
+                    value={photoFileList}
+                    onChange={(newFileList) => {
+                      console.log("Photo onChange called with:", newFileList);
+                      setPhotoFileList(newFileList);
+                      form.setFieldValue('upload', newFileList);
+                    }}
+                  />
+                </Form.Item>
+              </Col>
+              
+              <Col xs={24} md={12}>
+                <Form.Item 
+                  label="Prayer Unit" 
+                  name="prayerUnit" 
+                  rules={[{ required: true, message: "Please select a prayer unit!" }]}
+                >
+                  <Select placeholder="Select Prayer Unit">
+                    {Object.entries(Unit).map(([key, value]) => (
+                      <Option key={key} value={value}>
+                        {value}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                <Form.Item 
+                  label="Address" 
+                  name="address" 
+                  rules={[{ required: true, message: "Please enter the address!" }]}
+                >
+                  <Input.TextArea placeholder="Enter Address" rows={3} />
+                </Form.Item>
+
+                <Form.Item 
+                  label="House Name" 
+                  name="houseName"
+                >
+                  <Input placeholder="Enter House Name" />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <div style={{ margin: "20px 0" }}>
+              <Title level={4}>Family Members</Title>
             </div>
-          ))}
-          
-          <div style={{ height: "20px" }}></div>
-        </Form>
-      </Spin>
-    </div>
+
+            {memberForms.map((key, index) => (
+              <div key={key} style={{ marginBottom: "24px", border: "1px solid #f0f0f0", padding: "16px", borderRadius: "8px" }}>
+                <Row justify="space-between" align="middle" style={{ marginBottom: "16px" }}>
+                  <Col>
+                    <Title level={5}>
+                      Member {index + 1}
+                      {index < familyData.familyMembers.length && (
+                        <span style={{ color: '#666', fontSize: '14px', fontWeight: 'normal' }}>
+                          {' '}(Existing)
+                        </span>
+                      )}
+                      {index >= familyData.familyMembers.length && (
+                        <span style={{ color: '#52c41a', fontSize: '14px', fontWeight: 'normal' }}>
+                          {' '}(New)
+                        </span>
+                      )}
+                    </Title>
+                  </Col>
+                  {index > 0 && (
+                    <Col>
+                      <Button
+                        danger
+                        onClick={() => removeMember(index)}
+                      >
+                        Remove
+                      </Button>
+                    </Col>
+                  )}
+                </Row>
+                <FamilyMemberForm
+                  namePrefix={`member_${index}_`}
+                  isFamilyHead={familyHeadIndex === index}
+                  onSelectFamilyHead={() => setFamilyHeadIndex(index)}
+                />
+                {/* Show Add button only after the last member form */}
+                {index === memberForms.length - 1 && (
+                  <Button type="dashed" onClick={addNewMember} block style={{ marginTop: "16px" }}>
+                    + Add Family Member
+                  </Button>
+                )}
+              </div>
+            ))}
+            
+            <div style={{ height: "20px" }}></div>
+          </Form>
+        </Spin>
+      </div>
+    </App>
   );
 }
