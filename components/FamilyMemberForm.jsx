@@ -1,16 +1,10 @@
-import React, { useState } from "react";
-import { Form, Input, DatePicker, Checkbox, Radio, Select, Row, Col, Divider } from "antd";
+import React from "react";
+import { Form, Input, DatePicker, Radio, Select, Row, Col, Divider } from "antd";
 import BloodGroup from "@/enums/BloodGroup";
 const { Option } = Select;
 
 // Add member component 
 export default function FamilyMemberForm({ namePrefix = "", isFamilyHead, onSelectFamilyHead }) {
-    const [isMarried, setIsMarried] = useState(false);
-
-    const handleMarriedChange = (e) => {
-        setIsMarried(e.target.checked);
-    };
-
     return (
         <>
             <Row gutter={50}>
@@ -51,23 +45,6 @@ export default function FamilyMemberForm({ namePrefix = "", isFamilyHead, onSele
                 </Col>
             </Row>
 
-            <Row gutter={50}>
-                <Col span={12}>
-                    <Form.Item name={`${namePrefix}isMarried`} style={{ textAlign: "left", fontStyle: "italic" }} valuePropName="checked">
-                        <Checkbox onChange={handleMarriedChange}>Is Married</Checkbox>
-                    </Form.Item>
-                </Col>
-            </Row>
-
-            <Row gutter={50}>
-                {isMarried && (
-                    <Col span={12}>
-                        <Form.Item label="Wedding Date" name={`${namePrefix}weddingDate`} rules={[{ required: true, message: "Please enter the wedding date!" }]}>
-                            <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" placeholder="Select wedding date" />
-                        </Form.Item>
-                    </Col>
-                )}
-            </Row>
 
             <Row gutter={50}>
                 <Col span={12}>

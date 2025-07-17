@@ -13,6 +13,7 @@ import {
   Spin,
   Modal,
   App,
+  DatePicker, // Import DatePicker
 } from "antd";
 import { useParams, useRouter } from "next/navigation";
 import Unit from "@/enums/Unit";
@@ -41,6 +42,10 @@ export default function FamilyDetailsPage() {
   const [form] = Form.useForm();
   const [familyHeadIndex, setFamilyHeadIndex] = useState(0);
   const [memberForms, setMemberForms] = useState([]);
+  const [couples, setCouples] = useState([]);
+  const [familyMembersToRemove, setFamilyMembersToRemove] = useState([]);
+  const [couplesToBeRemoved, setCouplesToBeRemoved] = useState([]);
+  const [originalAnniversaryDates, setOriginalAnniversaryDates] = useState(new Map()); // Map<Short, Date>
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [familyData, setFamilyData] = useState(null);
@@ -112,20 +117,49 @@ export default function FamilyDetailsPage() {
             }
             
             memberValues[`member_${index}_bloodGroup`] = member.bloodGroup ? BloodGroup[member.bloodGroup] : null;
-            memberValues[`member_${index}_isMarried`] = member.isMarried || false;
-            
-            // Parse wedding date if exists
-            if (member.weddingDate) {
-              try {
-                memberValues[`member_${index}_weddingDate`] = dayjs(member.weddingDate, 'DD-MM-YY');
-              } catch (error) {
-                console.error("Error parsing wedding date:", member.weddingDate, error);
-                memberValues[`member_${index}_weddingDate`] = null;
-              }
-            }
+            memberValues[`member_${index}_coupleNo`] = member.coupleNo || null; // Set coupleNo
           });
           
           form.setFieldsValue(memberValues);
+
+          // Populate couples state from family.couples list
+          const loadedCouples = [];
+          const originalAnniversaryDatesMap = new Map(); // To track original dates for updates
+
+          if (family.couples && family.couples.length > 0) {
+            family.couples.forEach(couple => {
+              // Find member indices for spouse1Id and spouse2Id
+              const spouse1Index = family.familyMembers.findIndex(m => m.id === couple.spouse1Id);
+              const spouse2Index = family.familyMembers.findIndex(m => m.id === couple.spouse2Id);
+              
+              const memberKeysForCouple = [];
+              if (spouse1Index !== -1) memberKeysForCouple.push(spouse1Index);
+              if (spouse2Index !== -1) memberKeysForCouple.push(spouse2Index);
+
+              const coupleId = Date.now() + Math.random(); // Unique ID for frontend state
+              const anniversaryDate = couple.anniversaryDate ? dayjs(couple.anniversaryDate) : null;
+              
+              loadedCouples.push({
+                id: coupleId,
+                coupleNo: couple.coupleNo, // Store original coupleNo
+                members: memberKeysForCouple,
+                anniversaryDate: anniversaryDate,
+              });
+              
+              // Track original anniversary date for updates
+              originalAnniversaryDatesMap.set(couple.coupleNo, anniversaryDate ? anniversaryDate.format('YYYY-MM-DD') : null);
+            });
+          }
+          setCouples(loadedCouples);
+          setOriginalAnniversaryDates(originalAnniversaryDatesMap); // Set original map
+
+          // Set anniversary dates and selected members in form fields
+          loadedCouples.forEach((couple) => {
+            if (couple.anniversaryDate) {
+              form.setFieldValue(`couple_${couple.id}_anniversaryDate`, couple.anniversaryDate);
+            }
+            form.setFieldValue(`couple_${couple.id}_members`, couple.members);
+          });
         } else {
           setMemberForms([0]);
         }
@@ -170,6 +204,14 @@ export default function FamilyDetailsPage() {
   };
 
   const removeMember = (indexToRemove) => {
+    const memberKeyToRemove = memberForms[indexToRemove];
+    const isMemberInCouple = couples.some(couple => couple.members.includes(memberKeyToRemove));
+
+    if (isMemberInCouple) {
+      message.error("Cannot remove a family member who is part of a couple. Please remove them from the couple first.");
+      return;
+    }
+
     // Update family head index if removing the current head
     if (indexToRemove === familyHeadIndex) {
       setFamilyHeadIndex(0);
@@ -177,7 +219,31 @@ export default function FamilyDetailsPage() {
       // Adjust family head index if removing member before the head
       setFamilyHeadIndex(familyHeadIndex - 1);
     }
+    // If the removed member is an existing one, add their ID to familyMembersToRemove
+    if (indexToRemove < familyData.familyMembers.length) {
+      setFamilyMembersToRemove((prev) => [...prev, familyData.familyMembers[indexToRemove].id]);
+    }
     setMemberForms((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const addNewCouple = () => {
+    setCouples((prev) => [...prev, { id: Date.now(), members: [], anniversaryDate: null }]);
+  };
+
+  const removeCouple = (idToRemove) => {
+    setCouples((prev) => {
+      const removedCouple = prev.find((couple) => couple.id === idToRemove);
+      if (removedCouple && removedCouple.coupleNo) { // Check if it's an existing couple with a coupleNo
+        setCouplesToBeRemoved((prevRemoved) => [
+          ...prevRemoved,
+          {
+            coupleNo: removedCouple.coupleNo,
+            anniversaryDate: removedCouple.anniversaryDate ? dayjs(removedCouple.anniversaryDate).format('YYYY-MM-DD') : null,
+          },
+        ]);
+      }
+      return prev.filter((couple) => couple.id !== idToRemove);
+    });
   };
 
   const handleSaveFamily = async () => {
@@ -192,11 +258,37 @@ export default function FamilyDetailsPage() {
       // Find the enum key for the selected unit display value
       const unitKey = Object.keys(Unit).find(key => Unit[key] === values.prayerUnit);
       
+      // Prepare anniversaryDates map and couples for update/removal
+      const currentAnniversaryDates = {};
+      const couplesThatNeedUpdate = [];
+
+      couples.forEach((couple) => {
+        const coupleNo = couple.coupleNo || null; // Use existing coupleNo or null for new couples
+        const anniversaryDate = values[`couple_${couple.id}_anniversaryDate`]
+          ? dayjs(values[`couple_${couple.id}_anniversaryDate`]).format('YYYY-MM-DD')
+          : null;
+
+        if (coupleNo) {
+          // Existing couple: check for anniversary date changes
+          const originalDate = originalAnniversaryDates.get(coupleNo);
+          if (originalDate !== anniversaryDate) {
+            couplesThatNeedUpdate.push({
+              coupleNo: coupleNo,
+              anniversaryDate: anniversaryDate,
+            });
+          }
+          currentAnniversaryDates[coupleNo] = anniversaryDate;
+        } else {
+          // New couple: these will be handled when new members are added
+          // The backend will assign coupleNo and add to anniversaryDates
+        }
+      });
+
       // Separate new members from existing ones
       const newMembers = [];
       const existingMembers = [];
       
-      memberForms.forEach((_, index) => {
+      memberForms.forEach((memberKey, index) => {
         const memberData = {
           name: values[`member_${index}_fullName`],
           dob: values[`member_${index}_birthDate`] ? dayjs(values[`member_${index}_birthDate`]).format('YYYY-MM-DD') : null,
@@ -206,9 +298,17 @@ export default function FamilyDetailsPage() {
             ? Object.keys(BloodGroup).find(key => BloodGroup[key] === values[`member_${index}_bloodGroup`])
             : null,
           isFamilyHead: familyHeadIndex === index,
-          coupleNo: values[`member_${index}_coupleNo`] || null,
+          coupleNo: null, // Default to null, will be updated below
         };
         
+        // Determine coupleNo for both existing and new members
+        const associatedCouple = couples.find(couple => 
+          couple.members.includes(memberKey)
+        );
+        if (associatedCouple) {
+          memberData.coupleNo = associatedCouple.coupleNo; // Assign coupleNo if associated with any couple
+        }
+
         console.log(`Member ${index} data:`, memberData);
         console.log(`Member ${index} birth date value:`, values[`member_${index}_birthDate`]);
         console.log(`Member ${index} formatted dob:`, memberData.dob);
@@ -221,8 +321,48 @@ export default function FamilyDetailsPage() {
             id: familyData.familyMembers[index].id
           });
         } else {
-          // New member
-          newMembers.push(memberData);
+          // New member - include anniversaryDate and partnerId if part of a couple
+          console.log(`Processing new member with key: ${memberKey}, index: ${index}`);
+          console.log(`All couples:`, couples);
+          console.log(`Member forms:`, memberForms);
+          
+          // Check if this new member is part of any couple (existing or new)
+          const memberCouple = couples.find(couple => 
+            couple.members.includes(memberKey)
+          );
+          
+          console.log(`Found couple for new member:`, memberCouple);
+          
+          if (memberCouple) {
+            // Find the memberKey of the partner in this couple
+            const partnerMemberKey = memberCouple.members.find(mk => mk !== memberKey);
+            
+            let resolvedPartnerId = null;
+            // Find the partner's index in memberForms to determine if they are an existing member
+            const partnerIndexInMemberForms = memberForms.findIndex(key => key === partnerMemberKey);
+            
+            // If the partner's index is within the range of existing members, get their ID
+            if (partnerIndexInMemberForms !== -1 && partnerIndexInMemberForms < familyData.familyMembers.length) {
+                resolvedPartnerId = familyData.familyMembers[partnerIndexInMemberForms]?.id;
+            }
+            
+            // Get anniversary date from form values for this couple
+            const coupleAnniversaryDate = values[`couple_${memberCouple.id}_anniversaryDate`]
+              ? dayjs(values[`couple_${memberCouple.id}_anniversaryDate`]).format('YYYY-MM-DD')
+              : null;
+            
+            // Log for debugging
+            console.log(`New member (key: ${memberKey}) partner key: ${partnerMemberKey}, partner index: ${partnerIndexInMemberForms}, partnerId: ${resolvedPartnerId}, anniversaryDate: ${coupleAnniversaryDate}`);
+
+            newMembers.push({
+              ...memberData,
+              anniversaryDate: coupleAnniversaryDate,
+              partnerId: resolvedPartnerId, // Use the resolved partnerId (existing member's ID)
+            });
+          } else {
+            console.log(`No couple found for new member with key: ${memberKey}`);
+            newMembers.push(memberData);
+          }
         }
       });
       
@@ -231,7 +371,12 @@ export default function FamilyDetailsPage() {
         address: values.address,
         unit: unitKey,
         houseName: values.houseName,
-        familyMembers: existingMembers
+        familyMembers: existingMembers,
+        familyMembersToRemove: familyMembersToRemove, // Add removed members
+        couplesToBeRemoved: couplesToBeRemoved, // Add removed couples
+        couplesThatNeedUpdate: couplesThatNeedUpdate, // Add updated couples
+        anniversaryDates: currentAnniversaryDates, // Ensure this is the final map of all active anniversaries
+        familyMembersToAdd: newMembers, // Add new members directly to the update request
       };
       
       console.log("Family update data being sent to API:", familyUpdateData);
@@ -241,14 +386,6 @@ export default function FamilyDetailsPage() {
       
       // Update existing family
       await updateFamily(familyId, familyUpdateData);
-      
-      // Add new members if any
-      if (newMembers.length > 0) {
-        console.log("Adding new members:", newMembers);
-        console.log("Family ID:", familyId);
-        console.log("New members request data:", JSON.stringify(newMembers, null, 2));
-        await addFamilyMembers(familyId, newMembers);
-      }
       
       // Handle photo changes using state instead of form values
       const hasNewPhoto = photoFileList && photoFileList.length > 0 && photoFileList[0].originFileObj;
@@ -450,6 +587,7 @@ export default function FamilyDetailsPage() {
                   namePrefix={`member_${index}_`}
                   isFamilyHead={familyHeadIndex === index}
                   onSelectFamilyHead={() => setFamilyHeadIndex(index)}
+                  memberKey={key} // Pass the unique key for member selection in couples
                 />
                 {/* Show Add button only after the last member form */}
                 {index === memberForms.length - 1 && (
@@ -457,6 +595,75 @@ export default function FamilyDetailsPage() {
                     + Add Family Member
                   </Button>
                 )}
+              </div>
+            ))}
+
+            <div style={{ margin: "20px 0" }}>
+              <Title level={4}>Couples & Anniversaries</Title>
+              <Button type="dashed" onClick={addNewCouple} block style={{ marginTop: "16px", marginBottom: "24px" }}>
+                + Add Couple
+              </Button>
+            </div>
+
+            {couples.map((couple, index) => (
+              <div key={couple.id} style={{ marginBottom: "24px", border: "1px solid #f0f0f0", padding: "16px", borderRadius: "8px" }}>
+                <Row justify="space-between" align="middle" style={{ marginBottom: "16px" }}>
+                  <Col>
+                    <Title level={5}>Couple {index + 1}</Title>
+                  </Col>
+                  <Col>
+                    <Button
+                      danger
+                      onClick={() => removeCouple(couple.id)}
+                    >
+                      Remove Couple
+                    </Button>
+                  </Col>
+                </Row>
+                <Row gutter={16}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label="Select Members"
+                      name={`couple_${couple.id}_members`}
+                      rules={[{ required: true, message: "Please select two members for the couple!" }]}
+                    >
+                      <Select
+                        mode="multiple"
+                        placeholder="Select two members"
+                        maxCount={2}
+                        onChange={(selectedMemberKeys) => {
+                          setCouples(prev => prev.map(c =>
+                            c.id === couple.id ? { ...c, members: selectedMemberKeys } : c
+                          ));
+                        }}
+                      >
+                        {memberForms.map((memberKey, memberIndex) => {
+                          const isMemberSelectedInOtherCouple = couples.some(
+                            (c) => c.id !== couple.id && c.members.includes(memberKey)
+                          );
+                          const memberName = form.getFieldValue(`member_${memberIndex}_fullName`) || `Member ${memberIndex + 1}`;
+                          return (
+                            <Option 
+                              key={memberKey} 
+                              value={memberKey} 
+                              disabled={isMemberSelectedInOtherCouple}
+                            >
+                              {memberName} {isMemberSelectedInOtherCouple && "(Already in a couple)"}
+                            </Option>
+                          );
+                        })}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label="Anniversary Date"
+                      name={`couple_${couple.id}_anniversaryDate`}
+                    >
+                      <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
+                    </Form.Item>
+                  </Col>
+                </Row>
               </div>
             ))}
             

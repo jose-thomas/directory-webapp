@@ -1,11 +1,11 @@
 "use client";
 import { useRouter } from "next/navigation";
 import React, { useState, useEffect } from "react";
-import { Button, Flex, Input, Tooltip, Spin } from "antd";
-import { SearchOutlined, FilterOutlined, FileImageFilled, PlusOutlined } from "@ant-design/icons";
+import { Button, Flex, Input, Spin } from "antd";
+import { SearchOutlined, FilterOutlined, PlusOutlined } from "@ant-design/icons";
 import useHorizontalScroll from "@/hooks/useHorizontalScroll";
 import DirectoryTable from "./DirectoryTable";
-import { searchFamilies } from "@/lib/services/familyService";
+import { searchFamiliesWithCount } from "@/lib/services/familyService";
 import Unit from "@/enums/Unit";
 
 // HeaderActions Component
@@ -24,17 +24,6 @@ const HeaderActions = ({ onSearch }) => {
       <Button type="primary" icon={<PlusOutlined />} style={{ width: "10vw", borderRadius: "1.5vw" }} onClick={() => router.push("/directory/new-family")}>
         New Family
       </Button>
-      <Tooltip title="*Temp., will be removed post launch" color="red" placement="topRight">
-        <Button
-          color="gold"
-          variant="outlined"
-          style={{ width: "10vw", borderRadius: "1.5vw" }}
-          icon={<FileImageFilled />}
-        >
-          Bulk Upload
-          <span style={{ color: "red" }}>*</span>
-        </Button>
-      </Tooltip>
     </Flex>
   );
 };
@@ -88,16 +77,26 @@ export default function DirectoryPage() {
   const contentStyle = { height: "80vh", width: "82vw", overflow: "hidden" };
   const [loading, setLoading] = useState(false);
   const [familyData, setFamilyData] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   const [filterUnit, setFilterUnit] = useState("All");
   const [searchText, setSearchText] = useState("");
 
   const handleUnitSelect = (unit) => {
     setFilterUnit(unit);
+    setCurrentPage(1); // Reset to first page when filter changes
     console.log("Selected Unit for Filter:", unit);
   };
 
   const handleSearch = (value) => {
     setSearchText(value);
+    setCurrentPage(1); // Reset to first page when search changes
+  };
+
+  const handlePageChange = (page, size) => {
+    setCurrentPage(page);
+    setPageSize(size);
   };
 
   useEffect(() => {
@@ -105,8 +104,8 @@ export default function DirectoryPage() {
       setLoading(true);
       try {
         const payload = {
-          pageSize: 20,
-          offset: 1,
+          pageSize: pageSize,
+          offset: currentPage,
           node: {
             type: "filterCriteria",
             evaluationType: "AND",
@@ -134,8 +133,9 @@ export default function DirectoryPage() {
             ],
           },
         };
-        const response = await searchFamilies(payload);
-        setFamilyData(response);
+        const response = await searchFamiliesWithCount(payload);
+        setFamilyData(response.results);
+        setTotalCount(response.totalCount);
       } catch (error) {
         console.error("Error fetching families:", error);
       } finally {
@@ -144,7 +144,7 @@ export default function DirectoryPage() {
     };
 
     fetchFamilies();
-  }, [filterUnit, searchText]);
+  }, [filterUnit, searchText, currentPage, pageSize]);
 
   return (
     <Flex vertical justify="flex-start" align="center" style={contentStyle} gap="small">
@@ -153,7 +153,13 @@ export default function DirectoryPage() {
       {loading ? (
         <Spin size="large" style={{ marginTop: "20px" }} />
       ) : (
-        <DirectoryTable familyData={familyData} />
+        <DirectoryTable 
+          familyData={familyData}
+          totalCount={totalCount}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          onPageChange={handlePageChange}
+        />
       )}
     </Flex>
   );

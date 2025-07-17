@@ -1,19 +1,24 @@
 import { Menu } from "antd";
 import React from "react";
+import { useRouter } from "next/navigation";
 
 function SideMenu() {
+  const router = useRouter();
+
   const menuItems = [
-    "Directory",
-    "Parish Information",
-    "Church Committees",
-    "Prayer Units",
-    "Sponsors",
-  ].map((label, key) => {
+    { label: "Directory", path: "/directory" },
+    { label: "Parish Information", path: "/parish-information" },
+    { label: "Church Committees", path: "/church-committees" },
+    { label: "Prayer Units", path: "/prayer-units" },
+    { label: "Sponsors", path: "/sponsors" },
+  ].map((item, key) => {
     return {
       key: String(key + 1),
-      label: label,
+      label: item.label,
+      onClick: () => router.push(item.path),
     };
   });
+
   return (
     <Menu
       items={menuItems}

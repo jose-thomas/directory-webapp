@@ -3,11 +3,9 @@
 
 html,
 body {
-  height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
-  /* Prevent the body from scrolling */
+  /* Removed height: 100%; and overflow: hidden; to allow natural scrolling */
 }
 
 .scroll-container {

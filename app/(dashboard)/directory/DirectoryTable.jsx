@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Unit from "@/enums/Unit";
 
-function DirectoryTable({familyData}) {
+function DirectoryTable({familyData, totalCount, currentPage, pageSize, onPageChange}) {
   console.log("DirectoryTable rendering with data:", familyData);
   const router = useRouter();
 
@@ -12,6 +12,12 @@ function DirectoryTable({familyData}) {
     console.log("Editing family:", record);
     // Navigate to family details page using the familyId
     router.push(`/directory/${record.familyId}`);
+  };
+
+  const handleTableChange = (page, size) => {
+    if (onPageChange) {
+      onPageChange(page, size);
+    }
   };
 
   console.log(familyData);
@@ -44,7 +50,7 @@ function DirectoryTable({familyData}) {
       title: "Contact",
       dataIndex: "phoneNumber",
       key: "phoneNumber",
-      render: (text) => (
+      render: (text) => text ? (
         <Flex gap="small">
           <PhoneOutlined style={{ fontSize: "1vw", color: "#989898" }} />
           <span
@@ -54,17 +60,17 @@ function DirectoryTable({familyData}) {
               fontSize: "1vw",
             }}
           >
-            {text ? "+91 " + text.slice(0, 5) + " " + text.slice(5) : "N/A"}
+            +91 {text.slice(0, 5)} {text.slice(5)}
           </span>
         </Flex>
-      ),
+      ) : null,
       width: "22vw",
     },
     {
       title: "Email",
       dataIndex: "emailId",
       key: "emailId",
-      render: (text) => (
+      render: (text) => text ? (
         <Flex gap="small">
           <MailOutlined style={{ fontSize: "1vw", color: "#989898" }} />
           <span
@@ -74,10 +80,10 @@ function DirectoryTable({familyData}) {
               fontSize: "1vw",
             }}
           >
-            {text || "N/A"}
+            {text}
           </span>
         </Flex>
-      ),
+      ) : null,
       width: "22vw",
     },
     {
@@ -109,12 +115,15 @@ function DirectoryTable({familyData}) {
       columns={columns}
       dataSource={familyData || []}
       pagination={{ 
-        pageSize: 20,
+        current: currentPage,
+        pageSize: pageSize,
+        total: totalCount,
         showSizeChanger: true,
         showQuickJumper: true,
         showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} members`,
         pageSizeOptions: ['10', '20', '50', '100'],
-        defaultPageSize: 20
+        onChange: handleTableChange,
+        onShowSizeChange: handleTableChange,
       }}
       scroll={{ x: "max-content", y: "45vh" }}
       showHeader={false}

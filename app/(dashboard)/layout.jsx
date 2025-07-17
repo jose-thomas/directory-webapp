@@ -20,9 +20,10 @@ export default function DashboardLayout({ children }) {
   };
   const contentStyle = {
     textAlign: "center",
-    height: "80vh",
+    // height: "80vh", // Remove fixed height
     width: "82vw",
-    overflow: "hidden",
+    overflowY: "auto", // Allow vertical scrolling
+    flex: 1, // Allow content to grow and shrink
   };
   const siderStyle = {
     height: "100vh",
@@ -31,14 +32,14 @@ export default function DashboardLayout({ children }) {
     top: 0,
     bottom: 0,
     left: 0,
-    overflow: "hidden",
+    overflowY: "auto", // Allow vertical scrolling for sider if needed
     paddingTop: "20vh",
   };
   const layoutStyle = {
     width: "100vw",
-    height: "100vh",
+    minHeight: "100vh", // Use minHeight to allow content to push height
     display: "flex",
-    overflow: "hidden",
+    // overflow: "hidden", // Remove overflow hidden from main layout
   };
 
   return (
@@ -60,7 +61,7 @@ export default function DashboardLayout({ children }) {
             Log Out
           </Button>
         </Sider>
-        <AntLayout>
+        <AntLayout style={{ display: "flex", flexDirection: "column", flex: 1 }}>
           <Header style={headerStyle}>
             <Flex vertical justify="" align="flex-start">
               <p
