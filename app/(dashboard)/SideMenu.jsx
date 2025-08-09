@@ -9,6 +9,7 @@ function SideMenu() {
     { label: "Directory", path: "/directory" },
     { label: "Parish Information", path: "/parish-information" },
     { label: "Church Committees", path: "/church-committees" },
+    { label: "Church Positions", path: "/positions" },
     { label: "Prayer Units", path: "/prayer-units" },
     { label: "Sponsors", path: "/sponsors" },
   ].map((item, key) => {

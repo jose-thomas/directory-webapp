@@ -107,7 +107,7 @@ export default function FamilyDetailsPage() {
             // Parse date in dd-MM-yy format from API
             if (member.dob) {
               try {
-                memberValues[`member_${index}_birthDate`] = dayjs(member.dob, 'DD-MM-YY');
+                memberValues[`member_${index}_birthDate`] = dayjs(member.dob, 'DD-MM-YYYY');
               } catch (error) {
                 console.error("Error parsing birth date:", member.dob, error);
                 memberValues[`member_${index}_birthDate`] = null;

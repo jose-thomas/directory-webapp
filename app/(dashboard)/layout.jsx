@@ -17,6 +17,8 @@ export default function DashboardLayout({ children }) {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    zIndex: 10,
+    background: "#fff",
   };
   const contentStyle = {
     textAlign: "center",

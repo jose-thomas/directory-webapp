@@ -47,6 +47,24 @@ body {
   /* Chrome/Safari */
 }
 
+/* Fix for Ant Design Select dropdown z-index */
+.ant-select-dropdown {
+  z-index: 9999 !important;
+}
+
+/* Fix for card positioning */
+.ant-card {
+  position: relative !important;
+  z-index: 1 !important;
+  background-color: #ffffff !important;
+}
+
+/* Ensure form doesn't overlap with header */
+.ant-form {
+  position: relative !important;
+  z-index: 5 !important;
+}
+
 /* @theme {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

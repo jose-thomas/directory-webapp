@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
     "antd": "^5.26.5",
     "autoprefixer": "^10.4.21",
     "axios": "^1.8.4",
     "dayjs": "^1.11.13",
+    "lodash.debounce": "^4.0.8",
+    "mongo-mcp": "^0.2.0",
     "next": "^15.3.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
