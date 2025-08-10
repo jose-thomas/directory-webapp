@@ -8,7 +8,7 @@ function SideMenu() {
   const menuItems = [
     { label: "Directory", path: "/directory" },
     { label: "Parish Information", path: "/parish-information" },
-    { label: "Church Committees", path: "/church-committees" },
+    { label: "Church Committees", path: "/committees" },
     { label: "Church Positions", path: "/positions" },
     { label: "Prayer Units", path: "/prayer-units" },
     { label: "Sponsors", path: "/sponsors" },
